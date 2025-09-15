@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Todo App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8 text-white">
+                <h1 class="text-3xl font-bold text-center">Flask Todo App</h1>
+                <p class="text-blue-100 text-center mt-2">Stay organized and productive</p>
+            </div>
+
+            <!-- Add Todo Form -->
+            <div class="p-6 border-b">
+                <form method="POST" action="/add" class="space-y-4">
+                    <div class="flex gap-3">
+                        <input 
+                            type="text" 
+                            name="title" 
+                            placeholder="Add a new todo..." 
+                            required
+                            class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                        <button 
+                            type="submit"
+                            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
+                        >
+                            <i class="fas fa-plus"></i>
+                            Add
+                        </button>
+                    </div>
+                    <input 
+                        type="text" 
+                        name="description" 
+                        placeholder="Description (optional)" 
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                </form>
+            </div>
+
+            <!-- Filters and Stats -->
+            <div class="px-6 py-4 border-b bg-gray-50">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div class="flex gap-2">
+                        <a href="/" class="px-4 py-2 rounded-lg font-medium transition-colors {{ 'bg-blue-600 text-white' if filter_type == 'all' else 'bg-white text-gray-600 hover:bg-gray-100' }}">
+                            All
+                        </a>
+                        <a href="?filter=active" class="px-4 py-2 rounded-lg font-medium transition-colors {{ 'bg-blue-600 text-white' if filter_type == 'active' else 'bg-white text-gray-600 hover:bg-gray-100' }}">
+                            Active
+                        </a>
+                        <a href="?filter=completed" class="px-4 py-2 rounded-lg font-medium transition-colors {{ 'bg-blue-600 text-white' if filter_type == 'completed' else 'bg-white text-gray-600 hover:bg-gray-100' }}">
+                            Completed
+                        </a>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        {{ active_count }} active, {{ completed_count }} completed
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Todo List -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {% if todos %}
+                <div class="divide-y divide-gray-100">
+                    {% for todo in todos %}
+                    <div class="p-4 flex items-start gap-4 hover:bg-gray-50 transition-colors {{ 'opacity-75' if todo.completed else '' }}">
+                        <!-- Toggle Button -->
+                        <a href="/toggle/{{ todo.id }}" class="mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors {{ 'bg-green-500 border-green-500 text-white' if todo.completed else 'border-gray-300 hover:border-green-400' }}">
+                            {% if todo.completed %}
+                                <i class="fas fa-check text-sm"></i>
+                            {% endif %}
+                        </a>
+                        
+                        <!-- Todo Content -->
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium {{ 'line-through text-gray-500' if todo.completed else 'text-gray-800' }}">
+                                {{ todo.title }}
+                            </h3>
+                            {% if todo.description %}
+                                <p class="text-gray-600 mt-1 {{ 'line-through' if todo.completed else '' }}">
+                                    {{ todo.description }}
+                                </p>
+                            {% endif %}
+                            <p class="text-xs text-gray-400 mt-2">
+                                Created: {{ todo.created_at }}
+                                {% if todo.updated_at != todo.created_at %}
+                                    • Updated: {{ todo.updated_at }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <!-- Delete Button -->
+                        <a href="/delete/{{ todo.id }}" 
+                           onclick="return confirm('Are you sure you want to delete this todo?')"
+                           class="mt-1 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <i class="fas fa-trash text-sm"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="p-8 text-center text-gray-500">
+                    <div class="text-4xl mb-4">📝</div>
+                    <p class="text-lg font-medium">No todos found</p>
+                    <p class="text-sm mt-2">
+                        {% if filter_type == 'all' %}
+                            Add your first todo above!
+                        {% else %}
+                            No {{ filter_type }} todos.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+
+            <!-- Clear Completed Button -->
+            {% if completed_count > 0 %}
+                <div class="p-4 bg-gray-50 border-t">
+                    <a href="/clear-completed" 
+                       onclick="return confirm('Are you sure you want to clear all completed todos?')"
+                       class="block w-full text-center px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium">
+                        Clear Completed ({{ completed_count }})
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Overall Stats -->
+        <div class="mt-6 text-center text-gray-600">
+            <p class="text-sm">
+                Total: {{ total_count }} todos • Active: {{ active_count }} • Completed: {{ completed_count }}
+            </p>
+        </div>
+
+        <!-- API Info -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold mb-3 text-gray-800">API Endpoints</h3>
+            <div class="space-y-2 text-sm text-gray-600">
+                <p><code class="bg-gray-100 px-2 py-1 rounded">GET /api/todos</code> - Get all todos as JSON</p>
+                <p><code class="bg-gray-100 px-2 py-1 rounded">POST /api/todos</code> - Add todo via JSON</p>
+                <p><code class="bg-gray-100 px-2 py-1 rounded">GET /api/health</code> - Health check</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple client-side enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus on the main input
+            const titleInput = document.querySelector('input[name="title"]');
+            if (titleInput) {
+                titleInput.focus();
+            }
+
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + Enter to submit form
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    const form = document.querySelector('form');
+                    if (form) form.submit();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
